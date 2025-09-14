@@ -1,3 +1,7 @@
+---
+applyTo: **/*.ts, **/*.js
+---
+
 # Common Instructions for Summarize Logic
 
 ## Overview
