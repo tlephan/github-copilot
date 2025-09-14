@@ -1,5 +1,6 @@
+````instructions
 ---
-applyTo: **/*.ts, **/*.js
+applyTo: "**/*.ts, **/*.js"
 ---
 
 # Common Instructions for Summarize Logic
