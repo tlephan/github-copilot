@@ -8,19 +8,19 @@ The following diagram illustrates the relationship between the core components o
 
 ```mermaid
 graph TD
-    A[".github/copilot-instructions.md<br/>🎯 Repository-Level AI Agent Guidance"] --> B["AI Agent<br/>🤖 GitHub Copilot"]
+    A[".github/copilot-instructions.md<br/>Repository-Level AI Agent Guidance"] --> B["AI Agent<br/>GitHub Copilot"]
     
-    C[".github/instructions/<br/>📋 Reusable Task Templates"] --> B
-    D[".github/prompts/<br/>💬 Structured Prompt Templates"] --> B
+    C[".github/instructions/<br/>Reusable Task Templates"] --> B
+    D[".github/prompts/<br/>Structured Prompt Templates"] --> B
     
-    C --> |"References via<br/>applyTo: patterns"| E["Target Files<br/>📁 **/*.ts, **/*.js, etc."]
+    C --> |"References via<br/>applyTo: patterns"| E["Target Files<br/>**/*.ts, **/*.js, etc."]
     D --> |"References via<br/>'Use instructions in..'"| C
     
     A --> |"Defines standards for"| C
     A --> |"Defines standards for"| D
     
-    F["Individual Instruction<br/>📄 {task}.instructions.md"] --> C
-    G["Individual Prompt<br/>💭 {task}.prompt.md"] --> D
+    F["Individual Instruction<br/>{task}.instructions.md"] --> C
+    G["Individual Prompt<br/>{task}.prompt.md"] --> D
     
     F --> |"1:1 Correspondence"| G
     
@@ -57,10 +57,10 @@ graph TD
 
 | Component | Role | Relationships |
 |-----------|------|---------------|
-| **copilot-instructions.md** | 🎯 Central configuration and standards | • Guides AI agent behavior<br/>• Sets standards for instructions & prompts<br/>• Defines project context |
-| **Instructions/** | 📋 Detailed "how-to" frameworks | • Applied to specific file types via `applyTo`<br/>• Referenced by prompts<br/>• Contain comprehensive guidelines |
-| **Prompts/** | 💬 Concise "what-to" requests | • Reference instruction files<br/>• Define execution context<br/>• Specify AI model preferences |
-| **Target Files** | 📁 Code being processed | • Matched by instruction `applyTo` patterns<br/>• Processed using combined prompt + instruction logic |
+| **copilot-instructions.md** | Central configuration and standards | • Guides AI agent behavior<br/>• Sets standards for instructions & prompts<br/>• Defines project context |
+| **Instructions/** | Detailed "how-to" frameworks | • Applied to specific file types via `applyTo`<br/>• Referenced by prompts<br/>• Contain comprehensive guidelines |
+| **Prompts/** | Concise "what-to" requests | • Reference instruction files<br/>• Define execution context<br/>• Specify AI model preferences |
+| **Target Files** | Code being processed | • Matched by instruction `applyTo` patterns<br/>• Processed using combined prompt + instruction logic |
 
 ## Prompts
 
