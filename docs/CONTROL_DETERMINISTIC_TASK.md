@@ -71,6 +71,7 @@ Always respond in this exact format:
 Use precise, unambiguous language:
 
 ❌ **Vague**: "Analyze this code and provide feedback"
+
 ✅ **Specific**: "Identify exactly 3 potential bugs in this function. For each bug, provide: 1) line number, 2) issue description in 10 words or less, 3) specific fix"
 
 ## Best Practices by Use Case
