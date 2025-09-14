@@ -32,3 +32,7 @@ GitHub Copilot Knowledge Base: <https://github.com/Talentica/github-copilot-know
 
 Awesome GitHub Copilot Customizations: <https://github.com/github/awesome-copilot/>
 
+## More Reads in This Playbook
+
+1. [Prompt vs Instruction - What is the difference?](./docs/PROMPT_VS_INSTRUCTION.md)
+2. [How to Control Deterministic Task from LLM Models](./docs/CONTROL_DETERMINISTIC_TASK.md)

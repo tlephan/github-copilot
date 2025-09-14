@@ -1,7 +1,25 @@
-# How to Control Deterministic Output from LLM Models
+# How to Control Deterministic Task from LLM Models
 
 ## Overview
 Controlling LLM output for deterministic, consistent results is crucial for production applications, automated workflows, and reliable AI-assisted development. This guide provides actionable strategies to reduce variability and increase predictability in LLM responses.
+
+## Understanding Deterministic vs Undeterministic Tasks
+
+**Deterministic Tasks** are those that should produce consistent, predictable outputs given the same inputs. These require controlled variability and structured responses for reliable automation:
+- Code analysis and bug detection
+- Documentation generation following templates  
+- Test case creation with specific patterns
+- API response formatting
+- Compliance checking and validation
+
+**Undeterministic Tasks** are those that benefit from creativity and variation, where different outputs for the same input are desirable:
+- Creative writing and brainstorming
+- Generating multiple solution alternatives
+- Exploratory research and ideation
+- User-facing content that should feel natural
+- Design suggestions and artistic elements
+
+The key difference: deterministic tasks prioritize **consistency and reliability**, while undeterministic tasks prioritize **creativity and diversity**. This guide focuses on controlling output for deterministic tasks where predictability is essential.
 
 ## Core Principles
 
