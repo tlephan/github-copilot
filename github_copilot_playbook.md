@@ -12,6 +12,8 @@
 
 [GitHub Copilot Spaces in Preview](https://docs.github.com/en/copilot/how-tos/provide-context/use-copilot-spaces): A persistent space that remembers your code, files, and preferences across conversations.
 
+[AI Model Comparison](https://docs.github.com/en/copilot/reference/ai-models/model-comparison): Compare available AI models in Copilot Chat and choose the best model for your task.
+
 ## Community of Practices
 
 GitHub Copilot Knowledge Base: <https://github.com/Talentica/github-copilot-knowledge-base>
