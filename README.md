@@ -24,6 +24,8 @@ List of common instructions.
 
 [AI Model Comparison](https://docs.github.com/en/copilot/reference/ai-models/model-comparison): Compare available AI models in Copilot Chat and choose the best model for your task.
 
+[Auto-generate commit message in GitHub Desktop](https://docs.github.com/en/copilot/responsible-use/copilot-in-github-desktop#about-copilot-in-github-desktop): Responsible use of GitHub Copilot in GitHub Desktop.
+
 ## Community of Practices
 
 GitHub Copilot Knowledge Base: <https://github.com/Talentica/github-copilot-knowledge-base>
