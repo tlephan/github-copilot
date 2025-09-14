@@ -58,8 +58,8 @@ graph TD
 | Component | Role | Relationships |
 |-----------|------|---------------|
 | **copilot-instructions.md** | Central configuration and standards | • Guides AI agent behavior<br/>• Sets standards for instructions & prompts<br/>• Defines project context |
-| **Instructions/** | Detailed "how-to" frameworks | • Applied to specific file types via `applyTo`<br/>• Referenced by prompts<br/>• Contain comprehensive guidelines |
-| **Prompts/** | Concise "what-to" requests | • Reference instruction files<br/>• Define execution context<br/>• Specify AI model preferences |
+| **instructions/** | Detailed "how-to" frameworks | • Applied to specific file types via `applyTo`<br/>• Referenced by prompts<br/>• Contain comprehensive guidelines |
+| **prompts/** | Concise "what-to" requests | • Reference instruction files<br/>• Define execution context<br/>• Specify AI model preferences |
 | **Target Files** | Code being processed | • Matched by instruction `applyTo` patterns<br/>• Processed using combined prompt + instruction logic |
 
 ## Prompts
