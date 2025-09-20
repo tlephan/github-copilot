@@ -1,0 +1,89 @@
+# Prompt Flow Configuration for Unit Test Generation
+# This YAML file defines the order and configuration of prompts for automated unit test generation
+
+name: "unit_test_generation_flow"
+version: "1.0.0"
+description: "Automated flow for generating comprehensive unit tests using GitHub Copilot"
+
+# Global configuration
+config:
+  base_path: "./"
+  output_directory: "tests/"
+  backup_existing: true
+  dry_run: false
+  verbose: true
+
+# Execution order of prompts and instructions
+flow:
+  # Phase 1: Analysis and Context Gathering
+  - step: "context_analysis"
+    type: "instruction"
+    file: ".github/instructions/generate_unit_test.instructions.md"
+    description: "Load project context and coding guidelines"
+    required: true
+    
+  - step: "code_summarization"
+    type: "instruction" 
+    file: ".github/instructions/summarize_logic.instructions.md"
+    description: "Understand code logic and structure"
+    apply_to: ["**/*.ts", "**/*.js", "**/*.py"]
+    required: true
+    
+  # Phase 2: Prompt Execution
+  - step: "logic_analysis"
+    type: "prompt"
+    file: ".github/prompts/summarize_logic.prompt.md"
+    description: "Analyze and summarize target code logic"
+    depends_on: ["context_analysis", "code_summarization"]
+    timeout: 30
+    
+  # Phase 3: Test Generation (Future prompts to be added)
+  - step: "test_planning"
+    type: "prompt"
+    file: ".github/prompts/plan_unit_tests.prompt.md"  # To be created
+    description: "Plan comprehensive test cases and scenarios"
+    depends_on: ["logic_analysis"]
+    optional: false
+    
+  - step: "test_generation"
+    type: "prompt"
+    file: ".github/prompts/generate_unit_tests.prompt.md"  # To be created
+    description: "Generate actual unit test code"
+    depends_on: ["test_planning"]
+    optional: false
+    
+  - step: "test_validation"
+    type: "prompt"
+    file: ".github/prompts/validate_unit_tests.prompt.md"  # To be created
+    description: "Validate and improve generated tests"
+    depends_on: ["test_generation"]
+    optional: true
+
+# File patterns and filters
+file_patterns:
+  include:
+    - "src/**/*.ts"
+    - "src/**/*.js" 
+    - "lib/**/*.py"
+    - "app/**/*.py"
+  exclude:
+    - "**/*.test.ts"
+    - "**/*.spec.js"
+    - "**/*.test.py"
+    - "**/node_modules/**"
+    - "**/__pycache__/**"
+    - "**/dist/**"
+    - "**/build/**"
+
+# Output configuration
+output:
+  format: "combined"  # Options: combined, separate, both
+  filename_template: "{source_file}_tests.{extension}"
+  include_metadata: true
+  include_source_reference: true
+
+# Model and execution preferences
+execution:
+  model: "Claude Sonnet 4 (copilot)"
+  mode: "agent"
+  parallel_execution: false
