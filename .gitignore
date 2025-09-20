@@ -1,3 +1,4 @@
-/generated_prompts/*
+/volatile_prompts/*
 
-!/generated_prompts/.gitkeep
+!/volatile_prompts/.gitkeep
+!/volatile_prompts/README.md
