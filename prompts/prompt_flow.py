@@ -8,6 +8,7 @@ from the GitHub Copilot Playbook repository in a structured manner.
 
 import os
 import yaml
+import argparse
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass
@@ -37,24 +38,51 @@ class ProcessedFile:
     content: str
     frontmatter: Optional[Dict] = None
 
+@dataclass
+class FlowConfig:
+    """Configuration loaded from YAML flow file"""
+    name: str
+    version: str = "1.0.0"
+    description: str = ""
+    config: Dict = None
+    flow: List[Dict] = None
+    file_patterns: Dict = None
+    output: Dict = None
+    execution: Dict = None
+    
+    def __post_init__(self):
+        if self.config is None:
+            self.config = {}
+        if self.flow is None:
+            self.flow = []
+        if self.file_patterns is None:
+            self.file_patterns = {"include": [], "exclude": []}
+        if self.output is None:
+            self.output = {"format": "combined"}
+        if self.execution is None:
+            self.execution = {"model": "Claude Sonnet 4 (copilot)", "mode": "agent"}
+
 class PromptFlowReader:
     """
     Main class for reading and processing prompt/instruction files
     """
     
-    def __init__(self, base_path: str = None):
+    def __init__(self, base_path: str = None, config: FlowConfig = None):
         """
         Initialize the PromptFlowReader
         
         Args:
             base_path: Base directory path. If None, uses current working directory.
+            config: FlowConfig object with execution parameters
         """
         if base_path is None:
             self.base_path = Path.cwd()
         else:
             self.base_path = Path(base_path)
         
-        # Define common file patterns
+        self.config = config
+        
+        # Define common file patterns (can be overridden by config)
         self.instruction_patterns = [
             ".github/instructions/**/*.instructions.md",
             "instructions/**/*.instructions.md",
@@ -71,6 +99,146 @@ class PromptFlowReader:
             "docs/**/*.md",
             "*.md"
         ]
+        
+        # Override patterns if config is provided
+        if self.config and self.config.file_patterns:
+            if "include" in self.config.file_patterns:
+                # Use config patterns for discovery
+                self.config_patterns = self.config.file_patterns["include"]
+            if "exclude" in self.config.file_patterns:
+                self.exclude_patterns = self.config.file_patterns["exclude"]
+        else:
+            self.config_patterns = []
+            self.exclude_patterns = []
+    
+    @classmethod
+    def load_config(cls, config_file: Path) -> FlowConfig:
+        """
+        Load configuration from YAML file
+        
+        Args:
+            config_file: Path to the YAML configuration file
+            
+        Returns:
+            FlowConfig object
+            
+        Raises:
+            FileNotFoundError: If config file doesn't exist
+            yaml.YAMLError: If config file has invalid YAML
+        """
+        if not config_file.exists():
+            raise FileNotFoundError(f"Configuration file not found: {config_file}")
+        
+        try:
+            with open(config_file, 'r', encoding='utf-8') as f:
+                config_data = yaml.safe_load(f)
+            
+            return FlowConfig(
+                name=config_data.get('name', 'unnamed_flow'),
+                version=config_data.get('version', '1.0.0'),
+                description=config_data.get('description', ''),
+                config=config_data.get('config', {}),
+                flow=config_data.get('flow', []),
+                file_patterns=config_data.get('file_patterns', {}),
+                output=config_data.get('output', {}),
+                execution=config_data.get('execution', {})
+            )
+        except yaml.YAMLError as e:
+            raise yaml.YAMLError(f"Invalid YAML in config file {config_file}: {e}")
+    
+    def execute_flow(self) -> Dict[str, any]:
+        """
+        Execute the configured flow steps in order
+        
+        Returns:
+            Dictionary containing execution results
+        """
+        if not self.config or not self.config.flow:
+            print("⚠️  No flow configuration found. Running default behavior.")
+            return self._execute_default_flow()
+        
+        print(f"🚀 Executing flow: {self.config.name}")
+        print(f"📄 Description: {self.config.description}")
+        print(f"🔢 Version: {self.config.version}")
+        print("=" * 50)
+        
+        results = {
+            'flow_name': self.config.name,
+            'steps_executed': [],
+            'files_processed': {},
+            'combined_context': ''
+        }
+        
+        for i, step in enumerate(self.config.flow, 1):
+            step_name = step.get('step', f'step_{i}')
+            step_type = step.get('type', 'unknown')
+            file_path = step.get('file', '')
+            description = step.get('description', 'No description')
+            required = step.get('required', True)
+            
+            print(f"\n📋 Step {i}: {step_name}")
+            print(f"   Type: {step_type}")
+            print(f"   File: {file_path}")
+            print(f"   Description: {description}")
+            print(f"   Required: {required}")
+            
+            try:
+                # Process the file if it exists
+                full_path = self.base_path / file_path
+                if full_path.exists():
+                    processed_file = self.read_file(full_path)
+                    results['files_processed'][step_name] = processed_file
+                    results['steps_executed'].append({
+                        'step': step_name,
+                        'type': step_type,
+                        'file': file_path,
+                        'status': 'success',
+                        'content_length': len(processed_file.content)
+                    })
+                    print(f"   ✅ Processed successfully ({len(processed_file.content)} chars)")
+                else:
+                    if required:
+                        print(f"   ❌ Required file not found: {file_path}")
+                        results['steps_executed'].append({
+                            'step': step_name,
+                            'type': step_type,
+                            'file': file_path,
+                            'status': 'error',
+                            'error': 'File not found'
+                        })
+                    else:
+                        print(f"   ⚠️  Optional file not found: {file_path}")
+                        results['steps_executed'].append({
+                            'step': step_name,
+                            'type': step_type,
+                            'file': file_path,
+                            'status': 'skipped',
+                            'reason': 'Optional file not found'
+                        })
+                        
+            except Exception as e:
+                print(f"   ❌ Error processing step: {e}")
+                results['steps_executed'].append({
+                    'step': step_name,
+                    'type': step_type,
+                    'file': file_path,
+                    'status': 'error',
+                    'error': str(e)
+                })
+        
+        # Generate combined context for prompt files
+        prompt_files = [f for f in results['files_processed'].values() 
+                       if f.metadata.file_type == FileType.PROMPT]
+        
+        if prompt_files:
+            results['combined_context'] = self.append_and_print_prompt_context(prompt_files)
+        
+        print(f"\n✅ Flow execution completed: {len(results['steps_executed'])} steps processed")
+        return results
+    
+    def _execute_default_flow(self) -> Dict[str, any]:
+        """Execute default behavior when no config is provided"""
+        return {'flow_name': 'default', 'files_processed': self.read_all_files()}
     
     def _extract_frontmatter(self, content: str) -> Tuple[Optional[Dict], str]:
         """
@@ -368,63 +536,155 @@ class PromptFlowReader:
         return final_context
 
 
+def parse_args():
+    """
+    Parse command line arguments
+    
+    Returns:
+        argparse.Namespace: Parsed arguments
+    """
+    parser = argparse.ArgumentParser(
+        description="GitHub Copilot Playbook - Prompt Flow Reader",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  python unit_test_prompt_flow.py --flow unit_test_flow.yaml
+  python unit_test_prompt_flow.py --flow ../configs/my_flow.yaml --base-path ./workspace
+  python unit_test_prompt_flow.py  # Run with default behavior
+        """
+    )
+    
+    parser.add_argument(
+        '--flow',
+        type=str,
+        help='Path to YAML flow configuration file (e.g., unit_test_flow.yaml)'
+    )
+    
+    parser.add_argument(
+        '--base-path',
+        type=str,
+        default=None,
+        help='Base directory path for file operations (default: current directory)'
+    )
+    
+    parser.add_argument(
+        '--verbose', '-v',
+        action='store_true',
+        help='Enable verbose output'
+    )
+    
+    parser.add_argument(
+        '--dry-run',
+        action='store_true',
+        help='Show what would be executed without actually processing files'
+    )
+    
+    return parser.parse_args()
+
 def main():
     """
-    Example usage of the PromptFlowReader
+    Main entry point with CLI argument support
     """
-    # Initialize reader with current directory
-    reader = PromptFlowReader()
+    args = parse_args()
     
     print("🚀 GitHub Copilot Playbook - Prompt Flow Reader")
-    print("=" * 50)
+    print("=" * 60)
     
-    # Read all files by category
-    all_files = reader.read_all_files()
-    
-    # Display summary
-    for category, files in all_files.items():
-        print(f"\n📁 {category.upper()} ({len(files)} files)")
-        print("-" * 30)
-        
-        for processed_file in files:
-            reader.print_file_summary(processed_file)
-    
-    print(f"\n✅ Total files processed: {sum(len(files) for files in all_files.values())}")
-    
-    # Example: Read specific files in order
-    print("\n🔄 Reading specific files in order:")
-    print("-" * 40)
-    
-    specific_files = [
-        ".github/instructions/generate_unit_test.instructions.md",
-        ".github/instructions/summarize_logic.instructions.md", 
-        ".github/prompts/summarize_logic.prompt.md"
-    ]
-    
-    ordered_files = reader.read_files_in_order(specific_files)
-    
-    for i, processed_file in enumerate(ordered_files, 1):
-        print(f"\n{i}. {processed_file.file_path.name}")
-        print(f"   Type: {processed_file.metadata.file_type.value}")
-        if processed_file.metadata.description:
-            print(f"   Description: {processed_file.metadata.description}")
-    
-    # NEW: Append and print prompt context
-    prompt_files = all_files.get('prompts', [])
-    if prompt_files:
-        combined_prompt_context = reader.append_and_print_prompt_context(prompt_files)
-        
-        # Optionally save the combined context to a file
-        output_file = reader.base_path / "combined_prompt_context.md"
+    # Load configuration if provided
+    config = None
+    if args.flow:
         try:
-            with open(output_file, 'w', encoding='utf-8') as f:
-                f.write(combined_prompt_context)
-            print(f"\n💾 Combined prompt context saved to: {output_file}")
-        except IOError as e:
-            print(f"\n❌ Failed to save combined context: {e}")
-    else:
-        print("\n🚫 No prompt files found to combine.")
+            config_path = Path(args.flow)
+            if not config_path.is_absolute():
+                config_path = Path.cwd() / config_path
+            
+            print(f"📄 Loading configuration from: {config_path}")
+            config = PromptFlowReader.load_config(config_path)
+            print(f"✅ Configuration loaded: {config.name} v{config.version}")
+            
+            if args.verbose:
+                print(f"   Description: {config.description}")
+                print(f"   Flow steps: {len(config.flow)}")
+                
+        except (FileNotFoundError, yaml.YAMLError) as e:
+            print(f"❌ Error loading configuration: {e}")
+            return 1
+    
+    # Initialize reader
+    try:
+        reader = PromptFlowReader(base_path=args.base_path, config=config)
+        
+        if args.dry_run:
+            print("\n🔍 DRY RUN MODE - No files will be processed")
+            if config and config.flow:
+                print("\nFlow steps that would be executed:")
+                for i, step in enumerate(config.flow, 1):
+                    step_name = step.get('step', f'step_{i}')
+                    file_path = step.get('file', 'N/A')
+                    print(f"  {i}. {step_name}: {file_path}")
+            return 0
+        
+        # Execute flow or default behavior
+        if config:
+            results = reader.execute_flow()
+            
+            # Save results if configured
+            if config.output.get('format') == 'combined' and results.get('combined_context'):
+                output_file = reader.base_path / "combined_prompt_context.md"
+                try:
+                    with open(output_file, 'w', encoding='utf-8') as f:
+                        f.write(results['combined_context'])
+                    print(f"\n💾 Combined context saved to: {output_file}")
+                except IOError as e:
+                    print(f"\n❌ Failed to save combined context: {e}")
+            
+        else:
+            # Default behavior - read all files
+            print("\n📂 Running in default mode (no flow configuration)")
+            all_files = reader.read_all_files()
+            
+            # Display summary
+            for category, files in all_files.items():
+                print(f"\n📁 {category.upper()} ({len(files)} files)")
+                print("-" * 30)
+                
+                if args.verbose:
+                    for processed_file in files:
+                        reader.print_file_summary(processed_file)
+                else:
+                    # Show only file names in non-verbose mode
+                    for processed_file in files:
+                        print(f"   📄 {processed_file.file_path.name}")
+            
+            print(f"\n✅ Total files processed: {sum(len(files) for files in all_files.values())}")
+            
+            # Process prompts
+            prompt_files = all_files.get('prompts', [])
+            if prompt_files:
+                combined_prompt_context = reader.append_and_print_prompt_context(prompt_files)
+                
+                # Save combined context
+                output_file = reader.base_path / "combined_prompt_context.md"
+                try:
+                    with open(output_file, 'w', encoding='utf-8') as f:
+                        f.write(combined_prompt_context)
+                    print(f"\n💾 Combined prompt context saved to: {output_file}")
+                except IOError as e:
+                    print(f"\n❌ Failed to save combined context: {e}")
+            else:
+                print("\n🚫 No prompt files found to combine.")
+        
+        return 0
+        
+    except Exception as e:
+        print(f"\n❌ Unexpected error: {e}")
+        if args.verbose:
+            import traceback
+            traceback.print_exc()
+        return 1
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+    exit_code = main()
+    sys.exit(exit_code)
